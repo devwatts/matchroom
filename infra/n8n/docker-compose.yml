@@ -1,4 +1,4 @@
-# n8n + Caddy (HTTPS) for the matching pipeline.
+# n8n, the recruiter app, and Caddy (HTTPS) for the matching pipeline.
 # n8n keeps its own data (workflows, executions, credentials) in SQLite in a Docker volume,
 # outside the Supabase project shared with reviewers.
 name: match-n8n
@@ -33,6 +33,20 @@ services:
     expose:
       - "5678"
 
+  web:
+    build: ./web
+    restart: unless-stopped
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      N8N_HOST: ${N8N_HOST}
+      WEBHOOK_SHARED_SECRET: ${WEBHOOK_SHARED_SECRET}
+      APP_PASSWORD: ${APP_PASSWORD}
+      N8N_ONBOARDING_WORKFLOW_ID: ${N8N_ONBOARDING_WORKFLOW_ID}
+      N8N_DAILY_WORKFLOW_ID: ${N8N_DAILY_WORKFLOW_ID}
+    expose:
+      - "3000"
+
   caddy:
     image: caddy:2.10.2-alpine
     restart: unless-stopped
@@ -42,12 +56,14 @@ services:
       - "443:443/udp"
     environment:
       N8N_HOST: ${N8N_HOST}
+      APP_HOST: ${APP_HOST}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
       - n8n
+      - web
 
 volumes:
   n8n_data:
