@@ -1,0 +1,93 @@
+{
+ "name": "W3 Daily schedule",
+ "settings": {
+  "executionOrder": "v1",
+  "timezone": "America/New_York",
+  "saveManualExecutions": true,
+  "saveDataSuccessExecution": "all",
+  "errorWorkflow": "uGbK1H9PWTzitS0i"
+ },
+ "connections": {
+  "Every day 08:00 New York": {
+   "main": [
+    [
+     {
+      "node": "Prepare daily runs",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare daily runs": {
+   "main": [
+    [
+     {
+      "node": "Run W2 for each talent",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "nodes": [
+  {
+   "id": "f90ff2e4-3cb1-542d-af07-3d713be3fa1d",
+   "name": "Every day 08:00 New York",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "cronExpression",
+       "expression": "0 8 * * *"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a7ba8fbf-5cb4-51c9-9fb6-f824f4745a07",
+   "name": "Prepare daily runs",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    260,
+    0
+   ],
+   "parameters": {
+    "jsCode": "// ---- shared helpers (prepended to every Code node by n8n/build.py) ----\nconst ENV = $env;\nconst SB = ENV.SUPABASE_URL, SBK = ENV.SUPABASE_SERVICE_ROLE_KEY;\nconst H = this.helpers;\nconst sleep = ms => new Promise(r => setTimeout(r, ms));\nconst now = () => new Date().toISOString();\n\nasync function http(opts, tries = 3) {\n  let err;\n  for (let a = 0; a < tries; a++) {\n    try { return await H.httpRequest({ json: true, timeout: 120000, ...opts }); }\n    catch (e) {\n      const rb = (e.response && (e.response.body || e.response.data)) || (e.cause && e.cause.response && (e.cause.response.data || e.cause.response.body)) || e.description;\n      const body = rb ? (typeof rb === 'string' ? rb : JSON.stringify(rb)).slice(0, 300) : '';\n      err = new Error(`${e.message}${body ? ' ' + body : ''}`);\n      const status = e.httpCode || (e.response && e.response.status);\n      if (status && Number(status) >= 400 && Number(status) < 500 && Number(status) !== 429) break;  // don't retry client errors\n      await sleep(2000 * (a + 1));\n    }\n  }\n  throw err;\n}\nconst sb = (method, path, body, prefer) => http({\n  method, url: `${SB}/rest/v1/${path}`, body,\n  headers: { apikey: SBK, Authorization: `Bearer ${SBK}`, 'Content-Type': 'application/json', ...(prefer ? { Prefer: prefer } : {}) },\n});\nconst rpc = (fn, args) => sb('POST', `rpc/${fn}`, args || {});\nconst one = async (path) => (await sb('GET', path))[0];\n\nasync function stepPatch(run, step, patch) { await sb('PATCH', `pipeline_run_steps?pipeline_run_id=eq.${run}&step=eq.${step}`, patch); }\n\n// Runs one pipeline step: marks it running, keeps a timestamped log, records the result or the error.\nasync function runStep(run, step, fn) {\n  const log = [];\n  const ctx = {\n    log: async (msg, flush = false) => { log.push({ at: now(), msg }); if (flush) await stepPatch(run, step, { log }); },\n    progress: async (summary, counts) => stepPatch(run, step, { summary, log, ...(counts ? { counts } : {}) }),\n  };\n  await stepPatch(run, step, { status: 'running', started_at: now(), log });\n  try {\n    const res = await fn(ctx);\n    await stepPatch(run, step, { status: 'finished', finished_at: now(), log, summary: res.summary, details: res.details || [], counts: res.counts || {} });\n    return res;\n  } catch (e) {\n    const msg = e.userMessage || e.message;\n    log.push({ at: now(), msg: 'ERROR ' + msg });\n    await stepPatch(run, step, { status: 'failed', finished_at: now(), log, error: msg, summary: 'Failed \u00b7 ' + msg });\n    await sb('PATCH', `pipeline_run_steps?pipeline_run_id=eq.${run}&status=eq.waiting`, { status: 'skipped', summary: 'Not run' });\n    await sb('PATCH', `pipeline_runs?id=eq.${run}`, { status: 'failed', error: msg, finished_at: now() });\n    throw e;\n  }\n}\n\n// Apify: start the run, wait for it, then fetch its dataset (the dataset id is kept so a failed save can re-load it).\nasync function apify(actor, input, ctx) {\n  const tok = ENV.APIFY_TOKEN;\n  let run = (await http({ method: 'POST', url: `https://api.apify.com/v2/acts/harvestapi~${actor}/runs?token=${tok}&waitForFinish=60`, body: input, timeout: 90000 })).data;\n  const t0 = Date.now();\n  while (!['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT'].includes(run.status)) {\n    if (Date.now() - t0 > 12 * 60 * 1000) throw new Error(`${actor} took longer than 12 minutes`);\n    if (ctx) await ctx.log(`Waiting for LinkedIn results (${Math.round((Date.now() - t0) / 1000)}s)`, true);\n    run = (await http({ method: 'GET', url: `https://api.apify.com/v2/actor-runs/${run.id}?token=${tok}&waitForFinish=60`, timeout: 90000 })).data;\n  }\n  if (run.status !== 'SUCCEEDED') throw new Error(`${actor} ended with status ${run.status}`);\n  const items = await http({ method: 'GET', url: `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${tok}&clean=true&format=json`, timeout: 120000 });\n  return { items, datasetId: run.defaultDatasetId };\n}\n\n// OpenRouter: pinned model and provider, fixed seed, strict schema. Same settings as the tested reads.\nasync function llm(prompt, user) {\n  const schema = { type: 'object', properties: prompt.properties, required: Object.keys(prompt.properties), additionalProperties: false };\n  const body = {\n    model: prompt.model, seed: 42, reasoning: { effort: 'low' }, max_tokens: 2000,\n    provider: { order: ['Azure'], allow_fallbacks: false, require_parameters: true },\n    messages: [{ role: 'system', content: prompt.system }, { role: 'user', content: user }],\n    response_format: { type: 'json_schema', json_schema: { name: prompt.schema_name, strict: true, schema } },\n  };\n  let err;\n  for (let a = 0; a < 3; a++) {\n    try {\n      const d = await http({ method: 'POST', url: 'https://openrouter.ai/api/v1/chat/completions', body, timeout: 240000,\n                             headers: { Authorization: `Bearer ${ENV.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' } }, 1);\n      return { out: JSON.parse(d.choices[0].message.content), usage: d.usage || {} };\n    } catch (e) { err = e; await sleep(3000 * (a + 1)); }\n  }\n  throw err;\n}\n\nconst LEVELS = ['internship', 'entry', 'associate', 'mid-senior', 'director', 'executive'];\nconst yearsLevel = y => y < 1 ? 'entry' : y < 3 ? 'associate' : y < 10 ? 'mid-senior' : 'director';\nconst py = x => (x === undefined || x === null) ? 'None' : x;   // prompts were tested with Python's text formatting\nconst pyNum = v => Number.isInteger(v) ? `${v}.0` : `${v}`;\n\n// W3: every morning. Clean up stuck runs, close ended windows, start a run for each active talent.\nawait rpc('mark_stale_runs');\nawait sb('PATCH', `talents?status=eq.active&match_until=lt.${now()}`, { status: 'window_ended', updated_at: now() });\nconst talents = await sb('GET', `talents?status=eq.active&match_until=gt.${now()}&select=id`);\nconst out = [];\nfor (const t of talents) {\n  const run = (await sb('POST', 'pipeline_runs', { talent_id: t.id, trigger: 'daily', n8n_execution_id: String($execution.id) }, 'return=representation'))[0];\n  await sb('POST', 'pipeline_run_steps', [\n    { pipeline_run_id: run.id, step: 'enrich', status: 'skipped', summary: 'Skipped \u00b7 profile was read when the talent was added' },\n    ...['discover', 'filter', 'match'].map(step => ({ pipeline_run_id: run.id, step, status: 'waiting' }))]);\n  out.push({ json: { talent_id: t.id, run_id: run.id } });\n}\nreturn out.length ? out : [];\n"
+   }
+  },
+  {
+   "id": "468dc56b-fb45-5cfb-a5b6-0072ed045e72",
+   "name": "Run W2 for each talent",
+   "type": "n8n-nodes-base.executeWorkflow",
+   "typeVersion": 1.2,
+   "position": [
+    520,
+    0
+   ],
+   "parameters": {
+    "source": "database",
+    "workflowId": {
+     "__rl": true,
+     "mode": "id",
+     "value": "FNzsSwXLHVHcOnrs"
+    },
+    "mode": "each",
+    "options": {
+     "waitForSubWorkflow": true
+    }
+   },
+   "onError": "continueRegularOutput"
+  }
+ ],
+ "id": "4bfkKXLc3vnjME6R"
+}
