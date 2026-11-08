@@ -32,7 +32,8 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
-      <div className="foot mono muted">New York jobs · daily 08:00</div>
+      <div className="foot" style={{ display: "grid", gap: 10 }}><span className="mono muted">New York jobs · daily 08:00</span>
+        <button className="btn alt sm" type="button" onClick={async () => { await fetch("/api/logout", { method: "POST" }); window.location.href = "/login"; }}>Log out</button></div>
     </aside>
   );
 }

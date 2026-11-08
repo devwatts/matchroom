@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
-import Sidebar from "@/components/Sidebar";
+import Shell from "@/components/Shell";
 import "./globals.css";
 
 const display = Schibsted_Grotesk({ subsets: ["latin"], weight: ["400", "500", "700", "800", "900"], variable: "--font-display" });
@@ -12,10 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${mono.variable}`}>
       <body>
-        <div className="shell">
-          <Sidebar />
-          <div className="content">{children}</div>
-        </div>
+        <Shell>{children}</Shell>
       </body>
     </html>
   );
