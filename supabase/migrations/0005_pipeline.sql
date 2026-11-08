@@ -66,7 +66,7 @@ begin
   with ins as (
     insert into talent_jobs (talent_id, job_id, first_discovered_at, last_seen_at, first_search_title, first_pipeline_run_id)
     select p_talent, job_id, now(), now(),
-           coalesce(item->'query'->>'jobTitle', item->'query'->>'title', item->>'query'), p_run
+           coalesce(item->'query'->>'search', item->'query'->>'jobTitle', item->'query'->>'title', case when jsonb_typeof(item->'query') = 'string' then item->>'query' end), p_run
     from tm_items
     on conflict (talent_id, job_id) do update set last_seen_at = now()
     returning (xmax = 0) as inserted
