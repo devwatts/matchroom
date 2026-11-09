@@ -6,3 +6,9 @@ node_modules/
 .playwright-mcp/
 *.pyc
 __pycache__/
+*.tsbuildinfo
+# local working notes, not part of the project
+design_draft.md
+discussion_summary.md
+seniority_experiment.md
+research_notes/

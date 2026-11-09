@@ -22,12 +22,15 @@ def api(method, path, body=None):
 
 
 lib = (ROOT / "n8n/src/lib.js").read_text()
-prompts = {"talent": json.loads((ROOT / "prompts/talent_read_v5.json").read_text()),
-           "job": json.loads((ROOT / "prompts/job_read_v5.json").read_text())}
+prompts = {"talent": json.loads((ROOT / "prompts/talent_read_v6.json").read_text()),
+           "job": json.loads((ROOT / "prompts/job_read_v8.json").read_text()),
+           "skills": json.loads((ROOT / "prompts/skill_terms_v1.json").read_text()),
+           "evidence": json.loads((ROOT / "prompts/skill_evidence_v3.json").read_text())}
 
 
-def code(name, file, x, y, with_prompts=False):
-    js = lib + ("\nconst PROMPTS = " + json.dumps(prompts) + ";\n" if with_prompts else "") + "\n" + (ROOT / "n8n/src" / file).read_text()
+def code(name, file, x, y, with_prompts=False, extra=()):
+    js = lib + ("\nconst PROMPTS = " + json.dumps(prompts) + ";\n" if with_prompts else "") \
+        + "".join("\n" + (ROOT / "n8n/src" / f).read_text() for f in extra) + "\n" + (ROOT / "n8n/src" / file).read_text()
     return {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, name)), "name": name, "type": "n8n-nodes-base.code", "typeVersion": 2,
             "position": [x, y], "parameters": {"jsCode": js}}
 
@@ -80,7 +83,7 @@ w2 = upsert({"name": "W2 Talent run", "settings": S2,
              "nodes": [{"id": str(uuid.uuid5(uuid.NAMESPACE_URL, "w2-trigger")), "name": "When called by W1 or W3",
                         "type": "n8n-nodes-base.executeWorkflowTrigger", "typeVersion": 1.1, "position": [0, 0], "parameters": {"inputSource": "passthrough"}},
                        code("Discover", "w2_discover.js", 260, 0),
-                       code("Filter", "w2_filter.js", 520, 0, with_prompts=True),
+                       code("Filter", "w2_filter.js", 520, 0, with_prompts=True, extra=("profile.js",)),
                        code("Match", "w2_match.js", 780, 0)]})
 
 
@@ -100,7 +103,7 @@ upsert({"name": "W1 Talent onboarding", "settings": S2,
                    "parameters": {"httpMethod": "POST", "path": "talent-added", "authentication": "headerAuth", "responseMode": "onReceived", "options": {}},
                    "credentials": {"httpHeaderAuth": {"id": cred["id"], "name": cred_name}}},
                   code("Start run", "w1_start.js", 260, 0),
-                  code("Enrich", "w1_enrich.js", 520, 0, with_prompts=True),
+                  code("Enrich", "w1_enrich.js", 520, 0, with_prompts=True, extra=("profile.js",)),
                   call_w2("Run W2: discover, filter, match", 780, 0)]})
 
 upsert({"name": "W3 Daily schedule", "settings": S2,

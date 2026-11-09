@@ -1,0 +1,63 @@
+{
+ "firstName": "Test",
+ "lastName": "Person",
+ "headline": "Senior Account Manager",
+ "about": "Enterprise SaaS account manager.",
+ "experience": [
+  {
+   "position": "Senior Account Manager",
+   "companyName": "Acme SaaS",
+   "employmentType": "Full-time",
+   "startDate": {
+    "text": "Jun 2022",
+    "year": 2022,
+    "month": "Jun"
+   },
+   "endDate": {
+    "text": "Present"
+   },
+   "duration": "3 yrs",
+   "description": "Own renewals and expansion for enterprise accounts.",
+   "companyLogo": {
+    "url": "https://media.example/logo?e=1&t=AAA"
+   }
+  },
+  {
+   "position": "Account Executive",
+   "companyName": "Beta Corp",
+   "employmentType": "Full-time",
+   "startDate": {
+    "text": "Jan 2020",
+    "year": 2020,
+    "month": "Jan"
+   },
+   "endDate": {
+    "text": "May 2022",
+    "year": 2022,
+    "month": "May"
+   },
+   "duration": "2 yrs 5 mos",
+   "description": "Closed mid-market deals.",
+   "companyLogo": {
+    "url": "https://media.example/logo2?e=1&t=BBB"
+   }
+  }
+ ],
+ "education": [
+  {
+   "title": "State University",
+   "degree": "BBA",
+   "companyLogo": {
+    "url": "https://media.example/u?t=CCC"
+   }
+  }
+ ],
+ "skills": [
+  {
+   "name": "Salesforce"
+  },
+  {
+   "name": "Negotiation"
+  }
+ ]
+}

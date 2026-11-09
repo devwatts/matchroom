@@ -13,3 +13,5 @@ export const initials = (name?: string | null) => (name || "?").split(/\s+/).fil
 const AV = ["var(--cyan)", "var(--yellow)", "var(--violet)", "var(--green)", "var(--pink)"];
 export const avatarColor = (id: string) => AV[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % AV.length];
 export const code = (prefix: string, n: number) => `${prefix}x${String(n).padStart(3, "0")}`;
+// 13 -> "13", 13.83 -> "13.8"
+export const yrs = (y: number | string | null | undefined) => y == null ? "" : String(Math.round(Number(y) * 10) / 10);

@@ -10,7 +10,7 @@ function Seg<T extends string | number>({ value, options, onChange, label }: { v
 export default function AddTalentForm({ templates }: { templates: { id: string; name: string }[] }) {
   const router = useRouter();
   const [url, setUrl] = useState(""), [days, setDays] = useState(14), [win, setWin] = useState("week");
-  const [tpl, setTpl] = useState(""), [stage, setStage] = useState("none"), [min, setMin] = useState(65);
+  const [tpl, setTpl] = useState(""), [stage, setStage] = useState("none"), [min, setMin] = useState(75);
   const [spons, setSpons] = useState(false), [excl, setExcl] = useState("");
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null);
   async function submit(e: React.FormEvent) {

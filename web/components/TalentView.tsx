@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ago, avatarColor, code, initials } from "@/lib/format";
+import { ago, avatarColor, code, initials, yrs } from "@/lib/format";
 
 type W = { skills: number; role: number; seniority: number; location: number; company_type: number };
 const KEYS: (keyof W)[] = ["skills", "role", "seniority", "location", "company_type"];
@@ -15,7 +15,10 @@ const LEVELS = ["entry", "associate", "mid-senior", "director"];
 const FILTER_LABEL: Record<string, [string, string]> = { "too junior": ["Too senior for them", "var(--yellow)"], "well below talent level": ["Below their level", "var(--tile-deep)"],
   "not reasonable": ["Different role, no shared skills", "var(--tile-deep)"], "no shared skills": ["No shared skills", "var(--tile-deep)"],
   "needs industry experience": ["Industry they lack", "var(--violet)"], "excluded company": ["Excluded company", "var(--pink)"],
-  "excluded industry": ["Excluded industry", "var(--pink)"], "excluded title word": ["Excluded title word", "var(--pink)"], "no sponsorship": ["Won't sponsor", "var(--pink)"] };
+  "excluded industry": ["Excluded industry", "var(--pink)"], "excluded title word": ["Excluded title word", "var(--pink)"], "no sponsorship": ["Won't sponsor", "var(--pink)"],
+  "too little detail": ["Posting too thin to judge", "var(--tile-deep)"], "based in another country": ["Based outside the area", "var(--yellow)"] };
+
+const SKILL_STATUS: Record<string, string> = { has: "shown in their work", implied: "inferred from their work", weak: "thin evidence", none: "not on profile" };
 
 function compValue(stage: string | null, pref: string): number | null {
   if (pref === "none" || !stage || stage === "unknown") return null;
@@ -72,7 +75,7 @@ export default function TalentView({ talent, settings, fact, matches, lastRun, t
       <div className="phead">
         <div className="avatar" style={{ ["--av" as any]: avatarColor(talent.id) }}>{initials(talent.name)}</div>
         <div>
-          <span className="mono muted">{code("TLN", talent.n)} · {fact ? `${fact.role_family.replace(/_/g, " ")} · ${fact.years_computed} years` : "profile not read yet"} · <a href={talent.linkedin_url} target="_blank" rel="noreferrer">LinkedIn ↗</a></span>
+          <span className="mono muted">{code("TLN", talent.n)} · {fact ? `${fact.role_family.replace(/_/g, " ")} · ${yrs(fact.years_computed)} years` : "profile not read yet"} · <a href={talent.linkedin_url} target="_blank" rel="noreferrer">LinkedIn ↗</a></span>
           <h1>{talent.name || "New talent"}</h1>
           <div className="row" style={{ marginTop: 8 }}>
             <span className={`chip ${talent.status === "active" ? "c-active" : talent.status === "failed" ? "c-failed" : talent.status === "adding" ? "c-adding" : "c-ended"}`}>{talent.status.replace("_", " ")}</span>
@@ -110,7 +113,9 @@ export default function TalentView({ talent, settings, fact, matches, lastRun, t
               const cls = k === "skills" ? (nv >= 0.7 ? "ok" : nv >= 0.35 ? "part" : "miss") : (nv >= 0.95 ? "ok" : nv >= 0.5 ? "part" : "miss");
               const txt = k === "skills" ? `Skills ${b.skills.has.length} of ${b.skills.has.length + b.skills.missing.length}` : k === "role" ? b.role.label
                 : k === "seniority" ? (v >= 0.95 ? "Level fits" : "Level off") : (b.location.remote ? "Remote" : "New York");
-              return <span key={k} className={cls}>{txt} · {Math.round(w[k] * Number(v))}/{w[k]}</span>;
+              const tip = k === "skills" && Array.isArray(b.skills.items)
+                ? b.skills.items.map((x: any) => `${x.skill}: ${SKILL_STATUS[x.status] || x.status}${x.evidence ? ` (${x.evidence})` : ""}`).join("\n") : undefined;
+              return <span key={k} className={cls} title={tip}>{txt} · {Math.round(w[k] * Number(v))}/{w[k]}</span>;
             };
             return (
               <article key={m.job_id} className="match">
@@ -163,7 +168,7 @@ export default function TalentView({ talent, settings, fact, matches, lastRun, t
                 ))}
                 <AddInput placeholder="+ skill" onAdd={v => setSkills([...skills, { name: v, source: "recruiter" }])} />
               </div>
-              <p className="slh" style={{ marginTop: 6 }}>Skills you add count in full. Related skills are also credited automatically, for example NestJS counts toward &quot;APIs&quot;.</p></div>
+              <p className="slh" style={{ marginTop: 6 }}>Skills you add count in full, and removing one stops it counting. Skills a job asks for that aren&apos;t on this list are checked against the work history, so a senior backend engineer gets credit for SQL without listing it.</p></div>
             <ChipEdit label="Deal-breaker · excluded companies" items={exclC} onChange={setExclC} placeholder="+ company" />
             <div><span className="mono muted">Deal-breaker · excluded industries</span>
               <div className="chipedit" style={{ marginTop: 8 }}>
@@ -200,7 +205,7 @@ export default function TalentView({ talent, settings, fact, matches, lastRun, t
             ))}
             <div className="slw"><div className="row"><span style={{ fontWeight: 800 }}>Show jobs scoring at least</span>
               <input className="num" type="number" min={0} max={100} value={min} onChange={e => setMin(Number(e.target.value) || 0)} aria-label="Minimum score" /></div>
-              <p className="slh">Jobs below this are counted but not shown. Higher means a shorter list you can trust more; lower shows more jobs, with more misses. 65 was the best balance on our test jobs.</p></div>
+              <p className="slh">Jobs below this are counted but not shown. Higher means a shorter list you can trust more; lower shows more jobs, with more misses. 75 was the best balance on our test jobs.</p></div>
             <div className="row"><button className="btn y" type="button" onClick={save} disabled={busy}>{busy ? "Re-scoring…" : "Save and re-score"}</button></div>
             <div className="row"><input className="search" style={{ flex: "1 1 160px" }} placeholder="Template name, e.g. Senior full-stack" value={tplName} onChange={e => setTplName(e.target.value)} />
               <button className="btn alt sm" type="button" onClick={saveTemplate}>Save as template</button></div>
@@ -213,9 +218,9 @@ export default function TalentView({ talent, settings, fact, matches, lastRun, t
 }
 
 function HELP(k: keyof W, first: string, fact: any) {
-  const y = fact ? `${fact.years_computed} years` : "their experience";
+  const y = fact ? `${yrs(fact.years_computed)} years` : "their experience";
   return {
-    skills: `How many of the job's core skills ${first} has. Skills used at work count fully, skills only listed on the profile count a little less.`,
+    skills: `How many of the job's core skills ${first} has, judged from the work history: shown in recent work counts fully, near-certain from the work counts most, thin evidence (only listed, only while studying, or long ago) counts half.`,
     role: `Whether the job is the same kind of work as ${first}'s, a related kind, or a different one.`,
     seniority: `Whether the years and level the job asks for fit ${first}'s ${y}. A small gap loses points; a big gap removes the job.`,
     location: "Remote jobs score a little higher than New York on-site. Off by default because every job found is in New York or remote.",

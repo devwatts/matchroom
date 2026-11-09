@@ -1,0 +1,156 @@
+{
+ "version": "v6",
+ "model": "openai/gpt-5.6-luna",
+ "system": "Level scale (LinkedIn's six levels):\n- internship: student or intern.\n- entry: about 0-2 years; scoped tasks with guidance (Junior, Graduate, Engineer I).\n- associate: about 1-3 years; works independently on defined work (Associate, Engineer II).\n- mid-senior: about 3-10 years; owns projects or systems end to end, may mentor (Senior, Staff, Lead, plain titles with experience).\n- director: manages managers or owns a function, typically 10+ years.\n- executive: VP, C-level, founder or co-founder roles.\n\nYou read one LinkedIn job posting and return facts. Quotes must be copied exactly from the text.\n- agency: is the poster a staffing/recruitment agency, job board, aggregator or marketplace, or reposting for a different employer? 'No agencies' means a direct employer. An advertising, marketing, PR or creative agency hiring for its own team is an employer.\n- agency_quote: the exact sentence from the posting or the company description that shows who the poster is ('our client is...', 'we are a staffing firm', 'we do not accept agency resumes'), or empty string. Never quote the Title, Company or LinkedIn level header lines.\n- named_employer: if the text says the role is at a specific company other than the poster, give that company's name; otherwise empty string.\n- title_family: the kind of job. Use 'executive'-style family founder_executive for founder/CEO/C-level openings.\n- level: grade the role on the scale. Founder, co-founder, CEO and C-level openings are executive.\n- above_senior: true only for individual-contributor roles above Senior: Staff, Senior Staff, Principal, Distinguished or equivalent scope (sets technical direction across several teams, or asks 8+ years). A flat title such as 'Member of Technical Staff' is judged by the stated scope and years, not by the word 'staff'. False for Senior and below and for people managers.\n- experience_paths: the ways a candidate can qualify on experience. Each path lists everything that must hold together, so its min_years is the LARGEST number in it ('8+ years, with 3 in X' is one path of 8; '6+ years of A, 4+ of B' is one path of 6). Separate paths are alternatives joined by OR ('9 years, or 7 with a Bachelor's'). 'Or equivalent experience' without a number is not a path. Empty list if no years are stated.\n- sponsorship: no_sponsorship if it won't sponsor or requires existing US authorization, citizenship or clearance; offers if it says it sponsors; otherwise not_stated.\n- must_have_skills: at most 8, the most central required technical skills, canonical common names ('react', 'python', 'aws', 'llm'). nice_to_have_skills: at most 6.\n- funding_quote: a verbatim quote stating a funding round or investors, or empty string.\n- required_industries: industries from the fixed list where PRIOR EXPERIENCE is stated as REQUIRED for the candidate (e.g. '5+ years selling medical devices', 'must have agency experience', 'insurance license and personal lines experience required'). Do NOT include the employer's own industry unless the posting requires prior experience in it. Do NOT include industries that are only preferred, a plus, or nice to have. Do NOT include a technical subject or skill area such as security, payments or data privacy: that is a skill, not an industry. Empty list if none.\n- required_industry_quote: the exact sentence that states the requirement, or empty string.",
+ "schema_name": "job_read",
+ "properties": {
+  "agency": {
+   "type": "string",
+   "enum": [
+    "employer",
+    "agency",
+    "unsure"
+   ]
+  },
+  "agency_quote": {
+   "type": "string"
+  },
+  "named_employer": {
+   "type": "string"
+  },
+  "title_family": {
+   "type": "string",
+   "enum": [
+    "software_engineering",
+    "frontend",
+    "backend",
+    "fullstack",
+    "mobile",
+    "ml_ai_engineering",
+    "data_engineering",
+    "data_science_analytics",
+    "devops_infra_sre",
+    "security",
+    "qa_testing",
+    "engineering_management",
+    "product_management",
+    "design",
+    "founder_executive",
+    "sales_gtm",
+    "marketing",
+    "operations",
+    "finance_accounting",
+    "consulting",
+    "research",
+    "other"
+   ]
+  },
+  "level": {
+   "type": "string",
+   "enum": [
+    "internship",
+    "entry",
+    "associate",
+    "mid-senior",
+    "director",
+    "executive"
+   ]
+  },
+  "level_quote": {
+   "type": "string"
+  },
+  "above_senior": {
+   "type": "boolean"
+  },
+  "experience_paths": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "min_years": {
+      "type": "integer"
+     },
+     "condition": {
+      "type": "string"
+     },
+     "quote": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "min_years",
+     "condition",
+     "quote"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "sponsorship": {
+   "type": "string",
+   "enum": [
+    "no_sponsorship",
+    "offers",
+    "not_stated"
+   ]
+  },
+  "sponsorship_quote": {
+   "type": "string"
+  },
+  "must_have_skills": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "nice_to_have_skills": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "funding_quote": {
+   "type": "string"
+  },
+  "required_industries": {
+   "type": "array",
+   "items": {
+    "type": "string",
+    "enum": [
+     "software_saas",
+     "fintech_payments",
+     "banking_lending",
+     "insurance",
+     "investment_asset_management",
+     "healthcare_providers",
+     "medical_devices",
+     "pharma_biotech_life_sciences",
+     "government_defense",
+     "education",
+     "retail_ecommerce",
+     "consumer_goods_food_beverage",
+     "manufacturing_industrial",
+     "automotive",
+     "energy_utilities",
+     "real_estate_construction",
+     "logistics_supply_chain",
+     "media_advertising_marketing_agencies",
+     "telecom",
+     "hospitality_travel",
+     "legal",
+     "consulting_professional_services",
+     "nonprofit",
+     "crypto_web3",
+     "gaming_entertainment",
+     "hardware_semiconductors",
+     "hr_staffing",
+     "data_ai_platforms",
+     "cybersecurity",
+     "other"
+    ]
+   }
+  },
+  "required_industry_quote": {
+   "type": "string"
+  }
+ }
+}

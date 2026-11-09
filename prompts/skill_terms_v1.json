@@ -1,0 +1,43 @@
+{
+ "version": "v1",
+ "model": "openai/gpt-5.6-luna",
+ "schema_name": "skill_terms",
+ "max_tokens": 8000,
+ "system": "You keep the skill dictionary of a recruiting system that matches candidates to jobs in every field (engineering, sales, marketing, communications, finance, operations, healthcare and more). For each term, return:\n- term: copied exactly as given.\n- canonical: the standard lower-case name of the skill ('golang' -> 'go', 'React.js' -> 'react', 'Amazon Web Services' -> 'aws', 'Business-to-business sales' -> 'b2b sales'). If a name in the existing list means the same skill, use that name exactly.\n- display: how the skill is normally written ('Go', 'React', 'AWS', 'PostgreSQL', 'C/C++', 'HIPAA', 'GitHub Actions', 'B2B sales').\n- counts_as: broader skills that anyone who has this skill has certainly used, as canonical names; prefer names from the existing list. Only what the skill itself proves, never what usually goes with it: 'django' -> python, backend development, apis; 'aws lambda' -> aws, serverless, cloud platforms; 'postgresql' -> sql, databases, relational databases; 'salesforce' -> crm; 'figma' -> ui design. 'react' does not prove 'typescript'. At most 5; empty list if nothing broader is certain.\n- general: true when the term is too broad to tell people in the same field apart: a whole profession or job function ('software engineering', 'backend engineering', 'sales', 'marketing'), a generic ability ('problem solving', 'communication', 'teamwork', 'programming', 'leadership') or a spoken language ('english'). Specific tools, languages, methods, domains, product areas and categories such as 'cloud platforms', 'databases', 'crm' or 'account management' are not general.",
+ "properties": {
+  "terms": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "term": {
+      "type": "string"
+     },
+     "canonical": {
+      "type": "string"
+     },
+     "display": {
+      "type": "string"
+     },
+     "counts_as": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "general": {
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "term",
+     "canonical",
+     "display",
+     "counts_as",
+     "general"
+    ],
+    "additionalProperties": false
+   }
+  }
+ }
+}

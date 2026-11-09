@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     ...base, talent_id: t.id,
     first_search_window: WINDOWS.includes(b.first_search_window) ? b.first_search_window : "week",
     startup_preference: STAGES.includes(b.startup_preference) ? b.startup_preference : (base.startup_preference ?? "none"),
-    min_score: Number.isFinite(Number(b.min_score)) ? Math.min(100, Math.max(0, Number(b.min_score))) : (base.min_score ?? 65),
+    min_score: Number.isFinite(Number(b.min_score)) ? Math.min(100, Math.max(0, Number(b.min_score))) : (base.min_score ?? 75),
     needs_sponsorship: Boolean(b.needs_sponsorship),
     excluded_companies: String(b.excluded_companies || "").split(",").map(s => s.trim()).filter(Boolean),
   };

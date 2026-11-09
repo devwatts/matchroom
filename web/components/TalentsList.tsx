@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ago, avatarColor, code, initials } from "@/lib/format";
+import { ago, avatarColor, code, initials, yrs } from "@/lib/format";
 import type { TalentRow } from "@/lib/data";
 
 const ST: Record<string, [string, string]> = { active: ["c-active", "active"], adding: ["c-adding", "adding…"], paused: ["c-ended", "paused"],
@@ -32,7 +32,7 @@ export default function TalentsList({ rows }: { rows: TalentRow[] }) {
                 <span className="who" role="cell">
                   <span className="avatar sm" style={{ ["--av" as any]: avatarColor(t.id) }}>{initials(t.name)}</span>
                   <span style={{ minWidth: 0 }}><b>{t.name || t.linkedin_url.replace(/^https:\/\/www\.linkedin\.com\/in\//, "")}</b>
-                    <span className="mono muted">{code("TLN", t.n)} · {t.role}{t.years != null ? ` · ${t.years} yrs` : ""}</span></span>
+                    <span className="mono muted">{code("TLN", t.n)} · {t.role}{t.years != null ? ` · ${yrs(t.years)} yrs` : ""}</span></span>
                 </span>
                 <span role="cell"><span className={`chip ${(ST[t.status] || ST.active)[0]}`}>{(ST[t.status] || [, t.status])[1]}</span></span>
                 <span role="cell" className="big">{t.status === "adding" ? "–" : t.matches}</span>
