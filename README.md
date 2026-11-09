@@ -28,7 +28,6 @@ n8n/test/              failure tests for the shared helpers (node n8n/test/lib.t
 prompts/               versioned read prompts and schemas; README shows the active text
 web/                   recruiter app (Next.js): talents, matches, settings, runs, analytics
 infra/                 docker compose (n8n + app + Caddy) and the deploy script
-docs/designs/          the design document: decisions, test results, data model
 ```
 
 ## Running it
@@ -44,6 +43,4 @@ Tests: `node n8n/test/lib.test.js` and
 
 ## More
 
-The full reasoning, the test results on hand-labelled jobs and the remaining weak spots are in
-[docs/designs/talent-job-matching.md](docs/designs/talent-job-matching.md). Prompt versions and what changed
-between them are in [prompts/README.md](prompts/README.md).
+Prompt versions and what changed between them are in [prompts/README.md](prompts/README.md).
